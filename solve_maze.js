@@ -167,7 +167,7 @@ function dijkstraWavefront(grid, start, end) {
  * @param {number[]} start - Start position [x, y]
  * @param {number[]} end - End position [x, y]
  * @returns {Object} { path, visitOrder }
- */
+
 function aStarSolve(grid, start, end) {
     const h = grid.length;
     const w = grid[0].length;
@@ -233,18 +233,18 @@ function aStarSolve(grid, start, end) {
         visitOrder: visitOrder
     };
 }
+*/
 
 // ---------------------------
 // BFS Algorithm
 // ---------------------------
-
 /**
  * Solve maze using Breadth-First Search
  * @param {number[][]} grid - Maze grid
  * @param {number[]} start - Start position [x, y]
  * @param {number[]} end - End position [x, y]
  * @returns {Object} { path, visitOrder }
- */
+
 function bfsSolve(grid, start, end) {
     const h = grid.length;
     const w = grid[0].length;
@@ -291,6 +291,7 @@ function bfsSolve(grid, start, end) {
         visitOrder: visitOrder
     };
 }
+*/
 
 // ---------------------------
 // Render Solved Maze (ASCII)
@@ -370,8 +371,8 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         dijkstraSolve,
         dijkstraWavefront,
-        aStarSolve,
-        bfsSolve,
+        //aStarSolve,
+        //bfsSolve,
         renderSolvedASCII,
         calculateStats
     };

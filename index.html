@@ -239,6 +239,34 @@
             top: 0;
         }
 
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding-right: 2rem;
+        }
+
+        th.sortable:hover {
+            background: #4d4d6c;
+        }
+
+        th.sortable::after {
+            content: '⇅';
+            position: absolute;
+            right: 0.75rem;
+            opacity: 0.3;
+        }
+
+        th.sortable.asc::after {
+            content: '↑';
+            opacity: 1;
+        }
+
+        th.sortable.desc::after {
+            content: '↓';
+            opacity: 1;
+        }
+
         td {
             color: #d0d0d0;
         }
@@ -276,15 +304,6 @@
                 <h2>⚙️ Settings</h2>
                 
                 <div class="control-group">
-                    <label for="algorithm">Generation Algorithm</label>
-                    <select id="algorithm">
-                        <option value="dfs">DFS (Recursive Backtracker)</option>
-                        <option value="prim">Prim's Algorithm</option>
-                        <option value="wilson">Wilson's Algorithm</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
                     <label for="solverAlgo">Solving Algorithm</label>
                     <select id="solverAlgo">
                         <option value="dijkstra">Dijkstra's Algorithm</option>
@@ -319,7 +338,7 @@
 
                 <div class="btn-group" id="animationControls" style="display: none;">
                     <button class="btn-warning" id="pauseBtn" onclick="togglePause()">⏸️</button>
-                    <button class="btn-info" onclick="resetAnimation()">↺</button>
+                    <button class="btn-info" onclick="resetAnimation()">↻</button>
                     <button class="btn-orange" onclick="instantSolve()">⚡</button>
                 </div>
 
@@ -362,8 +381,8 @@
                             <th>Size</th>
                             <th>End Point</th>
                             <th>Path</th>
-                            <th>Explored</th>
-                            <th>Time</th>
+                            <th class="sortable" onclick="sortResults('explored')">Explored</th>
+                            <th class="sortable" onclick="sortResults('time')">Time</th>
                         </tr>
                     </thead>
                     <tbody id="resultsBody">
@@ -401,6 +420,7 @@
         let lastPauseTime = null;
         let resultsHistory = [];
         let resultCounter = 0;
+        let currentSort = { column: null, direction: null };
 
         const canvas = document.getElementById('mazeCanvas');
         const ctx = canvas.getContext('2d');
@@ -412,8 +432,6 @@
             
             const notes = {
                 'dijkstra': 'Guarantees shortest path',
-                'astar': 'Fastest with heuristic guidance',
-                'bfs': 'Explores level by level',
                 'wallfollower': 'Follows left wall - may not be shortest'
             };
             
@@ -540,17 +558,11 @@
 
         // Generate maze wrapper
         function generateMazeWrapper() {
-            const algo = document.getElementById('algorithm').value;
             const seed = Date.now();
 
             try {
-                if (algo === 'dfs') {
-                    grid = generateMazeDFS(width, height, seed);
-                } else if (algo === 'prim') {
-                    grid = generateMazePrim(width, height, seed);
-                } else if (algo === 'wilson') {
-                    grid = generateMazeWilson(width, height, seed);
-                }
+                // Always use DFS algorithm
+                grid = generateMazeDFS(width, height, seed);
 
                 endPoint = [width - 1, height - 1];
                 solutionData = null;
@@ -764,9 +776,84 @@
             updateResultsTable();
         }
 
+        // Sort results
+        function sortResults(column) {
+            if (resultsHistory.length === 0) return;
+            
+            // Toggle sort direction
+            if (currentSort.column === column) {
+                if (currentSort.direction === 'asc') {
+                    currentSort.direction = 'desc';
+                } else if (currentSort.direction === 'desc') {
+                    currentSort.direction = null;
+                    currentSort.column = null;
+                } else {
+                    currentSort.direction = 'asc';
+                }
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            
+            // Sort the results
+            if (currentSort.column && currentSort.direction) {
+                resultsHistory.sort((a, b) => {
+                    let valueA, valueB;
+                    
+                    if (column === 'explored') {
+                        valueA = a.cellsExplored;
+                        valueB = b.cellsExplored;
+                    } else if (column === 'time') {
+                        // Convert time string to milliseconds
+                        valueA = timeStringToMs(a.time);
+                        valueB = timeStringToMs(b.time);
+                    }
+                    
+                    if (currentSort.direction === 'asc') {
+                        return valueA - valueB;
+                    } else {
+                        return valueB - valueA;
+                    }
+                });
+            } else {
+                // Reset to original order (by ID descending)
+                resultsHistory.sort((a, b) => b.id - a.id);
+            }
+            
+            updateResultsTable();
+        }
+
+        // Convert time string to milliseconds
+        function timeStringToMs(timeStr) {
+            const parts = timeStr.split(':');
+            const minutes = parseInt(parts[0]);
+            const secParts = parts[1].split('.');
+            const seconds = parseInt(secParts[0]);
+            const milliseconds = parseInt(secParts[1]);
+            return minutes * 60000 + seconds * 1000 + milliseconds;
+        }
+
         // Update results table
         function updateResultsTable() {
             const tbody = document.getElementById('resultsBody');
+            
+            // Update sort indicators in headers
+            const headers = document.querySelectorAll('th.sortable');
+            headers.forEach(th => {
+                th.classList.remove('asc', 'desc');
+            });
+            
+            if (currentSort.column) {
+                const columnMap = {
+                    'explored': 6,
+                    'time': 7
+                };
+                const headerIndex = columnMap[currentSort.column];
+                const header = document.querySelectorAll('th')[headerIndex];
+                if (header) {
+                    header.classList.add(currentSort.direction);
+                }
+            }
             
             if (resultsHistory.length === 0) {
                 tbody.innerHTML = `
@@ -799,6 +886,7 @@
             if (confirm('Are you sure you want to clear all results history?')) {
                 resultsHistory = [];
                 resultCounter = 0;
+                currentSort = { column: null, direction: null };
                 updateResultsTable();
             }
         }
