@@ -309,7 +309,7 @@
                         <option value="dijkstra">Dijkstra's Algorithm</option>
                         <option value="wallfollower">Wall Follower</option>
                     </select>
-                    <div class="algo-note" id="algoNote"></div>
+                    <div class="algo-note" id="algoNote">Guarantees shortest path</div>
                 </div>
 
                 <div class="control-group">
@@ -339,7 +339,7 @@
                 <div class="btn-group" id="animationControls" style="display: none;">
                     <button class="btn-warning" id="pauseBtn" onclick="togglePause()">⏸️</button>
                     <button class="btn-info" onclick="resetAnimation()">↻</button>
-                    <button class="btn-orange" onclick="instantSolve()">⚡</button>
+                    <!-- <button class="btn-orange" onclick="instantSolve()">⚡</button> -->
                 </div>
 
                 <div class="control-group" id="speedControl" style="display: none;">
@@ -387,7 +387,7 @@
                     </thead>
                     <tbody id="resultsBody">
                         <tr>
-                            <td colspan="9" style="text-align: center; color: #a0a0a0; padding: 2rem;">
+                            <td colspan="8" style="text-align: center; color: #a0a0a0; padding: 2rem;">
                                 No results yet. Solve a maze to see results!
                             </td>
                         </tr>
@@ -635,6 +635,8 @@
                 solving = false;
                 solveEndTime = Date.now();
                 document.getElementById('timerDisplay').className = 'timer completed';
+                drawMaze();
+                updateStats();
                 updateTimer();
                 addResultToHistory();
                 return;
@@ -681,6 +683,7 @@
         }
 
         // Instant solve
+        /*
         function instantSolve() {
             if (!solutionData) return;
             animationStep = solutionData.visitOrder.length + solutionData.path.length;
@@ -692,6 +695,7 @@
             updateTimer();
             addResultToHistory();
         }
+        */
 
         // Update timer
         function updateTimer() {
@@ -751,8 +755,8 @@
             const milliseconds = elapsed % 1000;
             const timeString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
             
-            const genAlgo = document.getElementById('algorithm').value.toUpperCase();
-            const genAlgoName = genAlgo === 'DFS' ? 'DFS' : (genAlgo === 'PRIM' ? "Prim's" : "Wilson's");
+            // Since we always use DFS algorithm
+            const genAlgoName = 'DFS';
             
             const solverAlgo = document.getElementById('solverAlgo').value;
             const solverAlgoNames = {
@@ -769,7 +773,8 @@
                 endPoint: `(${endPoint[0]}, ${endPoint[1]})`,
                 pathLength: solutionData.path.length,
                 cellsExplored: solutionData.visitOrder.length,
-                time: timeString
+                time: timeString,
+                timeMs: elapsed
             };
             
             resultsHistory.unshift(result);
@@ -804,9 +809,8 @@
                         valueA = a.cellsExplored;
                         valueB = b.cellsExplored;
                     } else if (column === 'time') {
-                        // Convert time string to milliseconds
-                        valueA = timeStringToMs(a.time);
-                        valueB = timeStringToMs(b.time);
+                        valueA = a.timeMs;
+                        valueB = b.timeMs;
                     }
                     
                     if (currentSort.direction === 'asc') {
@@ -821,16 +825,6 @@
             }
             
             updateResultsTable();
-        }
-
-        // Convert time string to milliseconds
-        function timeStringToMs(timeStr) {
-            const parts = timeStr.split(':');
-            const minutes = parseInt(parts[0]);
-            const secParts = parts[1].split('.');
-            const seconds = parseInt(secParts[0]);
-            const milliseconds = parseInt(secParts[1]);
-            return minutes * 60000 + seconds * 1000 + milliseconds;
         }
 
         // Update results table
@@ -858,7 +852,7 @@
             if (resultsHistory.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="9" style="text-align: center; color: #a0a0a0; padding: 2rem;">
+                        <td colspan="8" style="text-align: center; color: #a0a0a0; padding: 2rem;">
                             No results yet. Solve a maze to see results!
                         </td>
                     </tr>
